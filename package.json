@@ -11,5 +11,7 @@
   ],
   "author": "theParadox42",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "mathjs": "^9.4.4"
+  }
 }
