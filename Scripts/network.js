@@ -34,10 +34,10 @@ function Network(layers) {
 // Feedforward or calculate
 Network.prototype.compute = function(input) {
     let activation = [input]
-    for (let layer = 0; layer < this.weights.length; layer ++) {
-        activation.push(this.weights[layer].map((weights, node) => {
-            let z = this.biases[layer][node] + math.dot(activation[activation.length - 1], weights)
-            let a = math.sigmoid(z);
+    for (let layer = 0; layer < this.layers.length - 1; layer ++) {
+        activation.push(this.biases[layer].map((bias, node) => {
+            let z = bias + math.dot(activation[activation.length - 1], this.weights[layer][node])
+            let a = math.sigmoid(z)
             return a
         }))
     }
@@ -48,32 +48,39 @@ Network.prototype.muchCompute = function(inputs) {
         return this.compute(input)
     })
 }
-Network.prototype.costWithActivation = function(activation, desiredOutput) {
+
+// Cost functions
+Network.prototype.costWithActivation = function(activation, outputs) {
     // array of costs summed up
-    return math.sum(activation[activation.length - 1].map((output, node) => {
-        return (output - desiredOutput[node]) ** 2
+    let cost = math.sum(activation[activation.length - 1].map((output, node) => {
+        return (output - outputs[node]) ** 2
     }))
+    return cost
 }
-Network.prototype.muchCostWithActivations = function(activations, desiredOutputs) {
+Network.prototype.muchCostWithActivations = function(activations, outputs) {
     return math.sum(activations.map((activation, index) => {
-        return this.costWithActivation(activation, desiredOutputs[index])
+        return this.costWithActivation(activation, outputs[index])
     })) / activations.length
 }
 Network.prototype.cost = function(input, output) {
-    const activation = this.compute(input)
-    return this.costWithActivation(activation, output)
+    return this.costWithActivation(this.compute(input), output)
 }
 Network.prototype.muchCost = function(inputs, outputs) {
-    return math.sum(inputs.map((input, index) => {
-        return this.cost(input, outputs[index])
-    })) / inputs.length
+    return this.muchCostWithActivations(inputs.map(input => {
+        return this.compute(input)
+    }), outputs)
 }
+
+// Gradient Vectors
 Network.prototype.createGradientVector = function(activation, desiredOutput) {
     let biasGradientVector = []
     let weightGradientVector = []
     const dCosts = []
 
     const lastLayerIndex = this.layers.length - 1
+
+
+    // console.log(this.weights)
 
     for (let L = lastLayerIndex; L > 0; L--) {
         const dBLayer = []
@@ -103,8 +110,8 @@ Network.prototype.createGradientVector = function(activation, desiredOutput) {
             if (L == lastLayerIndex) {
                 dCdZ = dAdZ * 2 * (activation[L][n] - desiredOutput[n])
             } else {
-                for (var i = 0; i < this.layers[L - 1]; i ++) {
-                    dCdZ += dCosts[dCosts.length - 1][i] * this.weights[L - 1][n][i]
+                for (var i = 0; i < this.layers[L + 1]; i ++) {
+                    dCdZ += dCosts[dCosts.length - 1][i] * this.weights[L][i][n]
                 }
             }
             dLCosts.push(dCdZ)
@@ -127,6 +134,8 @@ Network.prototype.createGradientVector = function(activation, desiredOutput) {
         dCosts.push(dLCosts)
     }
     
+    console
+
     return [biasGradientVector, weightGradientVector]
 
 }
@@ -146,6 +155,8 @@ Network.prototype.applyGradientVector = function(gradientVector, optionalLearnin
         })
     }
 }
+
+// Back Propagation
 Network.prototype.backPropagation = function(input, output, optionalLearningRate) {
 
     const activation = this.compute(input)
@@ -157,7 +168,7 @@ Network.prototype.backPropagation = function(input, output, optionalLearningRate
 }
 Network.prototype.muchBackPropagation = function(inputs, outputs, optionalLearningRate) {
 
-    const activations = this.muchCompute(inputs);
+    const activations = this.muchCompute(inputs)
     const gradientVectors = activations.map((activation, index) => {
         return this.createGradientVector(activation, outputs[index], optionalLearningRate)
     })
@@ -187,5 +198,5 @@ Network.prototype.muchBackPropagation = function(inputs, outputs, optionalLearni
 
 
 try {
-    module.exports = Network;
+    module.exports = Network
 } catch (e) {}
