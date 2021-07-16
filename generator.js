@@ -1,4 +1,4 @@
-
+let RGBtoHSL = require("./rgb-to-hsl.js")
 
 function generateColorData(amount) { 
     let data = [[], []]

@@ -10,7 +10,7 @@ function RGBtoHSL(colorArr) {
     let S = L > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min)
     let H = (r == max ? (g - b) / (max - min) : g == max ? 2 + (b - r) / (max - min) : 4 + (r - g) / (max - min)) / 6
     
-    return [H || 0, S || 0, L]
+    return [(H + 1) % 1 || 0, S || 0, L]
 }
 
 try {
