@@ -1,11 +1,18 @@
-let mathjs = require("mathjs")
-
-const sigmoid = (x) => {
-    return Math.exp(x) / (Math.exp(x) + 1)
-};
-// const dSigmoid = (x) => {
-//     return sigmoid(x)(1 - sigmoid(x))
-// }
+let math = {
+    dot: (arr1, arr2) => {
+        return math.sum(arr1.map((value, index) => {
+            return value * arr2[index]
+        }))
+    },
+    sum: arr => {
+        let sum = 0
+        arr.forEach(number => { sum += number })
+        return sum
+    },
+    sigmoid: x => {
+        return Math.exp(x) / (Math.exp(x) + 1) || 0
+    }
+}
 
 function Network(layers) {
     this.layers = layers;
@@ -23,8 +30,8 @@ Network.prototype.compute = function(input) {
     let activations = [input]
     for (layer = 0; layer < this.weights.length; layer ++) {
         activations.push(this.weights[layer].map((weights, node) => {
-            let z = this.biases[layer][node] + mathjs.dot(activations[activations.length - 1], weights);
-            let a = sigmoid(z);
+            let z = this.biases[layer][node] + math.dot(activations[activations.length - 1], weights)
+            let a = math.sigmoid(z);
             return a
         }))
     }
@@ -32,22 +39,27 @@ Network.prototype.compute = function(input) {
 }
 Network.prototype.costWithActivations = function(activations, desiredOutput) {
     // array of costs summed up
-    return mathjs.sum(activations[activations.length - 1].map((output, node) => {
+    return math.sum(activations[activations.length - 1].map((output, node) => {
         return (output - desiredOutput[node]) ** 2
     }))
 }
-Network.prototype.cost = function(input, desiredOutput) {
+Network.prototype.cost = function(input, output) {
     const activations = this.compute(input)
-    return this.costWithActivations(activations, desiredOutput)
+    return this.costWithActivations(activations, output)
 }
-Network.prototype.createGradient = function(activations, desiredOutput, learningRate) {
+Network.prototype.muchCost = function(inputs, outputs) {
+    return math.sum(inputs.map((input, index) => {
+        return this.cost(input, outputs[index])
+    })) / inputs.length
+}
+Network.prototype.createGradient = function(activations, desiredOutput, optionalLearningRate) {
     let biasGradientVector = []
     let weightGradientVector = []
     const dCosts = []
 
     const lastLayerIndex = this.layers.length - 1
 
-    let learningRate = learningRate || 0.7
+    learningRate = typeof optionalLearningRate == "number" ? optionalLearningRate : 0.5
 
     for (let L = lastLayerIndex; L > 0; L--) {
         const dBLayer = []
@@ -82,40 +94,51 @@ Network.prototype.createGradient = function(activations, desiredOutput, learning
             let dCdB = learningRate * dCdZ
             dBLayer.push(-dCdB)
             
+            let dWNode = []
             // handle weights
             for (let w = 0; w < this.weights[L - 1][n].length; w ++) {
                 let dCdW = learningRate * dCdZ * activations[L - 1][w]
                 // let push = 0; uses momentum and history
-                dWLayer.push(-dCdW);
+                dWNode.push(-dCdW)
             }
+            dWLayer.push(dWNode)
         }
         biasGradientVector.push(dBLayer)
         weightGradientVector.push(dWLayer)
         dCosts.push(dLCosts)
     }
-
+    
     return [biasGradientVector, weightGradientVector]
 
 }
-Network.prototype.backPropagation = function(input, output) {
+Network.prototype.backPropagation = function(input, output, optionalLearningRate) {
     const activations = this.compute(input)
-    const gradient = this.createGradient(activations, output)
+    const gradient = this.createGradient(activations, output, optionalLearningRate)
 
-    const biasGV = graident[0]
-    const weightGV = gradient[0] 
+    const biasGV = gradient[0]
+    const weightGV = gradient[1]
 
     for(let i = 0; i < this.layers.length - 1; i ++) {
-        let L = this.layers.length - i - 1
-        this.biases[L] = biasGV[L].map((dB, node) => {
-            return this.biases[L][node] + dB
+        let I = this.layers.length - i - 2
+        this.biases[i] = biasGV[I].map((dB, node) => {
+            
+            return this.biases[i][node] + dB
         })
-        this.weights[L] = weightGV[L].map((weights, node) => {
-            return weights[node].map((weight, index) => {
-                return this.weights[L][node][index] + weight
+        this.weights[i] = weightGV[I].map((weights, node) => {
+            return weights.map((dW, index) => {
+                
+                return this.weights[i][node][index] + dW
             })
         })
     }
-    
+}
+Network.prototype.muchBackPropagation = function(inputs, outputs, optionalLearningRate) {
+    for (let i = 0; i < inputs.length; i ++) {
+        this.backPropagation(inputs[i], outputs[i], optionalLearningRate)
+    }
 }
 
-module.exports = Network;
+
+try {
+    module.exports = Network;
+} catch (e) {}
