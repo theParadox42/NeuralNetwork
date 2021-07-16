@@ -1,5 +1,5 @@
 let Network = require("../Scripts/network.js")
-let Generator = require("..Scripts/generator")
+let Generator = require("../Scripts/generator.js")
 // let ColorData = require("../Scripts/color-data.js")
 let QuadraticData = require("../Scripts/quadratic-data.js")
 
