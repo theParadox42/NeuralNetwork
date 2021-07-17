@@ -5,7 +5,7 @@
     <script src="./libs/p5.min.js"></script>
     <script src="../Scripts/network.js"></script>
     <script src="./draw-network.js"></script>
-    <script src="../Scripts/point-curve.js"></script>
+    <script src="../Scripts/curves.js"></script>
     <script src="../Scripts/generator.js"></script>
     <style>
         body {
@@ -16,9 +16,9 @@
 <body>
     <script>
 
-    let curve = PointCurve.quadraticCos
+    let curve = Curves.quadraticCos
 
-    let network = new Network([2, 6, 1]);
+    let network = new Network([2, 4, 4, 1]);
 
     function setup() {
         createCanvas(400, 800)

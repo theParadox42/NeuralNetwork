@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Page</title>
+    <script src="./libs/p5.min.js"></script>
+    <script src="../Scripts/network.js"></script>
+    <script src="./draw-network.js"></script>
+    <script src="../Scripts/curves.js"></script>
+    <script src="../Scripts/generator.js"></script>
+    <style>
+        body {
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+
+        let curve = Curves.circle
+
+        let network = new Network([2, 4, 4, 1]);
+
+        function setup() {
+            createCanvas(400, 800)
+        }
+        let resolution = 100
+
+        let iterations = 5000
+        let dataSize = 500
+        function draw() {
+
+            if (frameCount % 20 == 0) {
+                background(20)
+
+                drawOutputCurve(400, 400)
+
+            }
+            drawNetwork(network, { x: 0, y: 400, width: 400, height: 400, radius: 10 })
+
+            if (network.iterations < iterations) {
+                let data = Generator(dataSize, 2, curve.inequality)
+                network.muchBackPropagation(data[0], data[1], 1, 0.9)
+            }
+
+        }
+
+        function drawOutputCurve(width, height) {
+            let tests = [[...Array(resolution)].map((row, y) => {
+                return [...Array(resolution)].map((col, x) => {
+                    return [x / resolution, y / resolution]
+                })
+            })]
+            tests.push(tests[0].map((row, y) => {
+                return row.map((col, x) => {
+                    return network.compute(col)
+                })
+            }))
+
+            noStroke()
+            for (let y = 0; y < tests[1].length; y++) {
+                for (let x = 0; x < tests[1][y].length; x++) {
+                    let resRecip = 1 / resolution
+                    let testActivation = tests[1][y][x]
+                    fill(testActivation[testActivation.length - 1][0] * 255)
+                    rect(x * width * resRecip, y * height * resRecip, width * resRecip, height * resRecip)
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>

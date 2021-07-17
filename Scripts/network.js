@@ -26,7 +26,7 @@ function Network(layers) {
         })
     })
     this.biases = layers.slice(1).map(layerCount => {
-        return [...Array(layerCount)].map(() => (Math.random() * 2 -1))
+        return [...Array(layerCount)].map(() => (Math.random() * 2 - 1))
     })
     this.previousGradientVector = false
     this.iterations = 0
