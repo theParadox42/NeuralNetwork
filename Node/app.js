@@ -1,12 +1,12 @@
 let Network = require("../Scripts/network.js")
 let Generator = require("../Scripts/generator.js")
 // let ColorData = require("../Scripts/color-data.js")
-let QuadraticData = require("../Scripts/quadratic-data.js")
+let CurveData = require("../Scripts/point-curve.js")
 
-let network = new Network([2, 1]);
+let network = new Network([2, 4, 4, 1]);
 
-let data = [...Array(100)].map(() => {
-    return Generator(1000, 2, QuadraticData.aboveStandardCurve)
+let data = [...Array(10)].map(() => {
+    return Generator(10, 2, CurveData.aboveStandardCurve)
 })
 
 let activation = network.compute(data[0][0][0])
@@ -21,7 +21,7 @@ console.log(cost)
 console.log("End of Test")
 
 for (let d = 0; d < data.length; d ++) {
-    activations = network.muchBackPropagation(data[d][0], data[d][1], 1)
+    activations = network.muchBackPropagation(data[d][0], data[d][1], 0.2)
 
     // logging
     

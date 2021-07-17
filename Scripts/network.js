@@ -72,10 +72,15 @@ Network.prototype.muchCost = function(inputs, outputs) {
 }
 
 // Gradient Vectors
-Network.prototype.createGradientVector = function(activation, desiredOutput) {
+Network.prototype.createGradientVector = function(activation, desiredOutput, optionalLearningRate, optionalMomentum) {
+
+    const learningRate = typeof optionalLearningRate == "number" ? optionalLearningRate : 0.5
+
+    const momentum = typeof optionalMomentum == "number" ? optionalMomentum : 0.5
+
     let biasGradientVector = []
     let weightGradientVector = []
-    const dCosts = []
+    let dCosts = []
 
     const lastLayerIndex = this.layers.length - 1
 
@@ -113,19 +118,21 @@ Network.prototype.createGradientVector = function(activation, desiredOutput) {
                 for (var i = 0; i < this.layers[L + 1]; i ++) {
                     dCdZ += dCosts[dCosts.length - 1][i] * this.weights[L][i][n]
                 }
+                dCdZ *= dAdZ
             }
             dLCosts.push(dCdZ)
 
             // handle biases
-            let dCdB = dZdB * dCdZ
-            dBLayer.push(-dCdB)
+            // GRADIENT DOESN'T EXIST SO CATCH THAT ERROR
+            let dCdB = -dZdB * dCdZ * learningRate + this.previousGradientVector[0][L][n] * momentum
+            dBLayer.push(dCdB)
             
             let dWNode = []
             // handle weights
             for (let w = 0; w < this.weights[L - 1][n].length; w ++) {
-                let dCdW = dCdZ * activation[L - 1][w]
+                let dCdW = -dCdZ * activation[L - 1][w] + this.previousGradientVector[0][L][n][w] * momentum
                 // let push = 0; uses momentum and history
-                dWNode.push(-dCdW)
+                dWNode.push(dCdW)
             }
             dWLayer.push(dWNode)
         }
@@ -141,19 +148,19 @@ Network.prototype.createGradientVector = function(activation, desiredOutput) {
 }
 Network.prototype.applyGradientVector = function(gradientVector, optionalLearningRate) {
 
-    optionalLearningRate = typeof optionalLearningRate == "number" ? optionalLearningRate : 0.5
-
     for (let i = 0; i < this.layers.length - 1; i++) {
         let I = this.layers.length - i - 2
         this.biases[i] = this.biases[i].map((bias, node) => {
-            return bias + gradientVector[0][I][node] * optionalLearningRate
+            return bias + gradientVector[0][I][node]
         })
         this.weights[i] = this.weights[i].map((weights, node) => {
             return weights.map((weight, index) => {
-                return weight + gradientVector[1][I][node][index] * optionalLearningRate
+                return weight + gradientVector[1][I][node][index]
             })
         })
     }
+
+    this.previousGradientVector = gradientVector
 }
 
 // Back Propagation
