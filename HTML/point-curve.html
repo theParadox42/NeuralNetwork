@@ -16,32 +16,31 @@
 <body>
     <script>
 
-    let curve = PointCurve.quadraticCurve
+    let curve = PointCurve.quadraticCos
 
-    let network = new Network([2, 4, 4, 1]);
-
-    let data = [...Array(1000)].map(() => {
-        return Generator(100, 2, curve)
-    })
-
+    let network = new Network([2, 6, 1]);
 
     function setup() {
         createCanvas(400, 800)
     }
-    let resolution = 40
+    let resolution = 80
 
-    let d = 0
+    let iterations = 10000
+    let dataSize = 200
     function draw() {
 
-        background(100)
+        if (frameCount % 10 == 0) {
+            background(20)
 
-        drawOutputCurve(400, 400)
+            drawOutputCurve(400, 400)
 
-        drawNetwork(network, { x: 0, y: 400, width: 400, height: 400, radius: 10 })
+            drawNetwork(network, { x: 0, y: 400, width: 400, height: 400, radius: 10 })
+        }
 
-        if (d < data.length) {
-            network.muchBackPropagation(data[d][0], data[d][1], 1)
-            d++
+        
+        if (network.iterations < iterations) {
+            let data = Generator(dataSize, 2, curve.inequality)
+            network.muchBackPropagation(data[0], data[1], 1, 0.95)
         }
 
     }
@@ -69,9 +68,9 @@
         }
 
         stroke(0)
-        strokeWeight(2)
+        strokeWeight(1)
         for (var x = 0; x < width; x++) {
-            point(x, curve.curve(x / width) * width)
+            line(x, curve.equation(x / width) * width, x - 1, curve.equation((x - 1) / width) * width)
         }
     }
 

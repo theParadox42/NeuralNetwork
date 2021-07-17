@@ -13,7 +13,7 @@ function drawNetwork(network, box, activation) {
         let nextLayerCount = network.layers[l + 1]
         for(let n = 0; n < layerCount; n ++) {
 
-            let y = box.height / 2 - layerCount * r * 2 + n * r * 4
+            let y = box.height / 2 - (layerCount - 1) * r * 1.5 + n * r * 3
 
             if (l < network.layers.length - 1) {
 
@@ -21,26 +21,41 @@ function drawNetwork(network, box, activation) {
                 for (let i = 0; i < nextLayerCount; i++) {
                     let weight = network.weights[l][i][n]
                     if (Math.abs(weight) > r * 2) {
-                        stroke(255, 255, 0)
-                    } else if (weight > 0) {
-                        stroke(0, 200, 0)
+                        if (weight > 0) {
+                            stroke(150, 200, 0)
+                        } else {
+                            stroke(200, 150, 0)
+                        }
                     } else {
-                        stroke(200, 0, 0)
+                        if (weight > 0) {
+                        stroke(0, 200, 0)
+                        } else {
+                            stroke(200, 0, 0)
+                        }
                     }
                     strokeWeight(Math.min(r * 2, Math.abs(weight)))
-                    line(x, y, x + w, box.height / 2 - nextLayerCount * r * 2 + i * r * 4)
+                    line(x, y, x + w, box.height / 2 - (nextLayerCount - 1) * r * 1.5 + i * r * 3)
                 }
 
             }
             //biases
 
             if (l > 0) {
-                if (network.biases[l - 1][n] > 0) {
-                    stroke(0, 50, 255)
+                let bias = network.biases[l - 1][n]
+                if (Math.abs(bias) > box.radius) {
+                    if (bias > 0) {
+                        stroke(150, 0, 200)
+                    } else {
+                        stroke(200, 0, 150)
+                    }
                 } else {
-                    stroke(255, 50, 0)
+                    if (bias > 0) {
+                        stroke(0, 100, 200)
+                    } else {
+                        stroke(200, 100, 0)
+                    }
                 }
-                strokeWeight(Math.abs(network.biases[l - 1][n]))
+                strokeWeight(Math.min(Math.abs(bias), box.radius))
             } else {
                 strokeWeight(1)
                 stroke(0)

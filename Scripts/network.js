@@ -29,6 +29,7 @@ function Network(layers) {
         return [...Array(layerCount)].map(() => (Math.random() * 2 -1))
     })
     this.previousGradientVector = false
+    this.iterations = 0
 }
 
 // Feedforward or calculate
@@ -76,7 +77,7 @@ Network.prototype.createGradientVector = function(activation, desiredOutput, opt
 
     const learningRate = typeof optionalLearningRate == "number" ? optionalLearningRate : 0.5
 
-    const momentum = typeof optionalMomentum == "number" ? optionalMomentum : 0.5
+    const momentum = typeof optionalMomentum == "number" ? optionalMomentum : 0.9
 
     let biasGradientVector = []
     let weightGradientVector = []
@@ -123,14 +124,13 @@ Network.prototype.createGradientVector = function(activation, desiredOutput, opt
             dLCosts.push(dCdZ)
 
             // handle biases
-            // GRADIENT DOESN'T EXIST SO CATCH THAT ERROR
-            let dCdB = -dZdB * dCdZ * learningRate + this.previousGradientVector[0][L][n] * momentum
+            let dCdB = -dZdB * dCdZ * learningRate + (this.previousGradientVector ? this.previousGradientVector[0][this.layers.length - L - 1][n] * momentum : 0)
             dBLayer.push(dCdB)
             
             let dWNode = []
             // handle weights
             for (let w = 0; w < this.weights[L - 1][n].length; w ++) {
-                let dCdW = -dCdZ * activation[L - 1][w] + this.previousGradientVector[0][L][n][w] * momentum
+                let dCdW = -dCdZ * activation[L - 1][w] + (this.previousGradientVector ? this.previousGradientVector[1][this.layers.length - L - 1][n][w] * momentum : 0)
                 // let push = 0; uses momentum and history
                 dWNode.push(dCdW)
             }
@@ -146,7 +146,7 @@ Network.prototype.createGradientVector = function(activation, desiredOutput, opt
     return [biasGradientVector, weightGradientVector]
 
 }
-Network.prototype.applyGradientVector = function(gradientVector, optionalLearningRate) {
+Network.prototype.applyGradientVector = function(gradientVector) {
 
     for (let i = 0; i < this.layers.length - 1; i++) {
         let I = this.layers.length - i - 2
@@ -161,23 +161,25 @@ Network.prototype.applyGradientVector = function(gradientVector, optionalLearnin
     }
 
     this.previousGradientVector = gradientVector
+
+    this.iterations ++
 }
 
 // Back Propagation
-Network.prototype.backPropagation = function(input, output, optionalLearningRate) {
+Network.prototype.backPropagation = function(input, output, optionalLearningRate, optionalMomentum) {
 
     const activation = this.compute(input)
-    const gradientVector = this.createGradientVector(activation, output)
+    const gradientVector = this.createGradientVector(activation, output, optionalLearningRate, optionalMomentum)
     
     this.applyGradientVector(gradientVector, optionalLearningRate)
     
     return activation
 }
-Network.prototype.muchBackPropagation = function(inputs, outputs, optionalLearningRate) {
+Network.prototype.muchBackPropagation = function(inputs, outputs, optionalLearningRate, optionalMomentum) {
 
     const activations = this.muchCompute(inputs)
     const gradientVectors = activations.map((activation, index) => {
-        return this.createGradientVector(activation, outputs[index], optionalLearningRate)
+        return this.createGradientVector(activation, outputs[index], optionalLearningRate, optionalMomentum)
     })
     const avgGradientVector = [
         gradientVectors[0][0].map((layer, layerIndex) => {
