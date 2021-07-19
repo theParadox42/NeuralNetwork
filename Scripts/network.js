@@ -17,8 +17,11 @@ let math = {
     }
 }
 
-function Network(layers) {
+function Network(layers, learningRate, momentum) {
     this.layers = layers;
+    this.learningRate = learningRate || 1
+    this.startingMomentum = momentum || 0.5
+    this.momentum = this.startingMomentum
     this.weights = layers.slice(0, -1).map((layerCount, index) => {
         let nextLayerCount = layers[index + 1]
         return [...Array(nextLayerCount)].map(() => {
@@ -73,18 +76,13 @@ Network.prototype.muchCost = function(inputs, outputs) {
 }
 
 // Gradient Vectors
-Network.prototype.createGradientVector = function(activation, desiredOutput, optionalLearningRate, optionalMomentum) {
-
-    const learningRate = typeof optionalLearningRate == "number" ? optionalLearningRate : 0.5
-
-    const momentum = typeof optionalMomentum == "number" ? optionalMomentum : 0.9
+Network.prototype.createGradientVector = function(activation, desiredOutput) {
 
     let biasGradientVector = []
     let weightGradientVector = []
     let dCosts = []
 
     const lastLayerIndex = this.layers.length - 1
-
 
     // console.log(this.weights)
 
@@ -124,14 +122,13 @@ Network.prototype.createGradientVector = function(activation, desiredOutput, opt
             dLCosts.push(dCdZ)
 
             // handle biases
-            let dCdB = -dZdB * dCdZ * learningRate + (this.previousGradientVector ? this.previousGradientVector[0][this.layers.length - L - 1][n] * momentum : 0)
+            let dCdB = -dZdB * dCdZ * this.learningRate + (this.previousGradientVector ? this.previousGradientVector[0][this.layers.length - L - 1][n] * this.momentum : 0)
             dBLayer.push(dCdB)
             
             let dWNode = []
             // handle weights
             for (let w = 0; w < this.weights[L - 1][n].length; w ++) {
-                let dCdW = -dCdZ * activation[L - 1][w] + (this.previousGradientVector ? this.previousGradientVector[1][this.layers.length - L - 1][n][w] * momentum : 0)
-                // let push = 0; uses momentum and history
+                let dCdW = -dCdZ * activation[L - 1][w] * this.learningRate + (this.previousGradientVector ? this.previousGradientVector[1][this.layers.length - L - 1][n][w] * this.momentum : 0)
                 dWNode.push(dCdW)
             }
             dWLayer.push(dWNode)
@@ -140,8 +137,6 @@ Network.prototype.createGradientVector = function(activation, desiredOutput, opt
         weightGradientVector.push(dWLayer)
         dCosts.push(dLCosts)
     }
-    
-    console
 
     return [biasGradientVector, weightGradientVector]
 
@@ -166,20 +161,26 @@ Network.prototype.applyGradientVector = function(gradientVector) {
 }
 
 // Back Propagation
-Network.prototype.backPropagation = function(input, output, optionalLearningRate, optionalMomentum) {
+Network.prototype.backPropagation = function(input, output) {
 
     const activation = this.compute(input)
-    const gradientVector = this.createGradientVector(activation, output, optionalLearningRate, optionalMomentum)
+
+    this.momentum = Math.min(this.costWithActivation(activation, output) * 10, 1) * this.startingMomentum
+
+    const gradientVector = this.createGradientVector(activation, output)
     
-    this.applyGradientVector(gradientVector, optionalLearningRate)
+    this.applyGradientVector(gradientVector)
     
     return activation
 }
-Network.prototype.muchBackPropagation = function(inputs, outputs, optionalLearningRate, optionalMomentum) {
+Network.prototype.muchBackPropagation = function(inputs, outputs) {
 
     const activations = this.muchCompute(inputs)
+
+    this.momentum = Math.min(this.muchCostWithActivations(activations, outputs) * 10, 1) * this.startingMomentum
+
     const gradientVectors = activations.map((activation, index) => {
-        return this.createGradientVector(activation, outputs[index], optionalLearningRate, optionalMomentum)
+        return this.createGradientVector(activation, outputs[index])
     })
     const avgGradientVector = [
         gradientVectors[0][0].map((layer, layerIndex) => {
@@ -200,7 +201,7 @@ Network.prototype.muchBackPropagation = function(inputs, outputs, optionalLearni
         })
     ]
     
-    this.applyGradientVector(avgGradientVector, optionalLearningRate)
+    this.applyGradientVector(avgGradientVector)
 
     return activations
 }

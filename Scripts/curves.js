@@ -40,23 +40,44 @@ function ImplicitCurve() {
     }
     this.gradient = {}
     this.gradient.transform = data => {
-        return [this.equation(data[0], data[1])]
+        return [this.equation(data[0], data[1]) ** 2]
     }
     this.matchThreshold = {}
     this.matchThreshold.transform = data => {
-        return [Math.abs(this.equation(data[0], data[1]) - this.threshold) ** 0.5]
+
+        return [(1 - Math.abs(this.equation(data[0], data[1]) - this.threshold)) ** 20]
     }
 }
 
 Curves.circle = new ImplicitCurve()
-Curves.circle.threshold = 0.25
+Curves.circle.threshold = 0.5
 Curves.circle.equation = (x, y) => {
     const cx = 0.5, cy = 0.5
     return ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
 }
 
 Curves.lotsOfCircles = new ImplicitCurve()
-// Curves.
+Curves.lotsOfCircles.threshold = 0.6
+Curves.lotsOfCircles.create = count => {
+    this.cxs = [...Array(count)].map(() => {
+        return Math.random()
+    })
+    this.cys = [...Array(count)].map(() => {
+        return Math.random()
+    })
+    this.count = count
+}
+Curves.lotsOfCircles.equation = (x, y) => {
+    let n = 0
+    for(var i = 0; i < this.cxs.length; i ++) {
+        const cx = this.cxs[i], cy = this.cys[i]
+        n += 1 / (15 * (((x - cx) ** 2 + (y - cy) ** 2) ** 0.5) + 1)
+    }
+    return n
+}
+Curves.lotsOfCircles.getPoints = () => {
+    return [this.cxs, this.cys]
+}
 
 try {
     module.exports = Curves

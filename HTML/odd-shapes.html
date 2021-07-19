@@ -18,53 +18,91 @@
 <body>
     <script>
 
-        let curve = Curves.circle
+        let curve = Curves.lotsOfCircles
+        curve.create(3)
+        let curveFilter = curve.inequality
 
-        let network = new Network([2, 4, 4, 1]);
+        let network = new Network([2, 4, 4, 1], 0.5, 0.9);
 
         function setup() {
-            createCanvas(400, 800)
+            createCanvas(1200, 800)
         }
-        let resolution = 100
+        let resolution = 20
 
-        let iterations = 5000
-        let dataSize = 500
+        let showGoal = false
+        let switched = false
+
+        function mouseReleased() {
+            switched = true
+            showGoal = !showGoal
+        }
+
+
+        let iterations = 10000
+        let dataSize = 1000
         function draw() {
 
-            if (frameCount % 20 == 0) {
-                background(20)
-
-                drawOutputCurve(400, 400)
-
+            if (network.iterations >= iterations) {
+                resolution = 400
+            } else if (mouseIsPressed) {
+                resolution = 200
+            } else {
+                resolution = 20
             }
-            drawNetwork(network, { x: 0, y: 400, width: 400, height: 400, radius: 10 })
+
+            if (network.iterations < iterations || switched) {
+                background(0)
+                drawOutputCurve(800, 800)
+                switched = false
+                drawNetwork(network, { x: 800, y: 0, width: 400, height: 800, radius: 10 })
+            }
+
+            if (frameCount % Math.floor(iterations / 100) == 0) {
+                let testData = Generator(1000, 2, curveFilter)
+                console.log(network.muchCost(testData[0], testData[1]))
+            }
 
             if (network.iterations < iterations) {
-                let data = Generator(dataSize, 2, curve.inequality)
-                network.muchBackPropagation(data[0], data[1], 1, 0.9)
+                let data = Generator(dataSize, 2, curveFilter)
+                network.muchBackPropagation(data[0], data[1])
+                if (network.iterations == iterations) {
+                    switched = true
+                }
             }
 
         }
 
         function drawOutputCurve(width, height) {
-            let tests = [[...Array(resolution)].map((row, y) => {
+            let dm = 0.5 / resolution
+
+            let networkTests = [[...Array(resolution)].map((row, y) => {
                 return [...Array(resolution)].map((col, x) => {
-                    return [x / resolution, y / resolution]
+                    return [x / resolution + dm, y / resolution + dm]
                 })
             })]
-            tests.push(tests[0].map((row, y) => {
+            networkTests.push(networkTests[0].map((row, y) => {
                 return row.map((col, x) => {
-                    return network.compute(col)
+                    let activation = network.compute(col)
+                    return activation[activation.length - 1][0]
                 })
             }))
 
             noStroke()
-            for (let y = 0; y < tests[1].length; y++) {
-                for (let x = 0; x < tests[1][y].length; x++) {
-                    let resRecip = 1 / resolution
-                    let testActivation = tests[1][y][x]
-                    fill(testActivation[testActivation.length - 1][0] * 255)
-                    rect(x * width * resRecip, y * height * resRecip, width * resRecip, height * resRecip)
+            for (let y = 0; y < networkTests[1].length; y++) {
+                for (let x = 0; x < networkTests[1][y].length; x++) {
+                    let w = width / resolution
+                    let h = height / resolution
+
+                    let l = networkTests[1][y][x]
+                    fill(128 - l * 128, l * 128, 0)
+                    rect(x * w, y * h, w, h)
+
+                    if (showGoal) {
+                        l = curveFilter.transform([x / resolution + dm, y / resolution + dm])[0]
+                        fill(255, l * 50)
+                        rect(x * w, y * h, w, h)
+                    }
+
                 }
             }
         }
